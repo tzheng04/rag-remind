@@ -4,7 +4,9 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 
-from db import save_message, fetch_recent
+from db import save_message, save_reminder, fetch_recent
+from parse import check_important
+from extraction import extract_reminder
 
 load_dotenv()
 
@@ -49,14 +51,19 @@ async def on_message(message):
     if message.channel.id != TRACKED_CHANNEL:
         return
 
-    print(
-        message.author,
-        message.channel,
-        message.content
-    )
+    # print(
+    #     message.author,
+    #     message.channel,
+    #     message.content
+    # )
+    if (check_important(message.content)):
+        reminder = extract_reminder(message.content, message.created_at.isoformat())
+        print(reminder)
+        save_reminder(reminder)
+        await message.channel.send(f"You said {message.content}: reminder saved")
+    else:
+        await message.channel.send(f"You said {message.content}: no reminder found")
 
-    await message.channel.send(f"You said {message.content}")
-
-    save_message(message)
+    # save_message(message)
 
 client.run(TOKEN)
