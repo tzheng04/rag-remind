@@ -27,6 +27,16 @@ def save_message(message):
         .execute()
     )
 
+def save_reminder(reminder):
+    data = reminder.model_dump()
+
+    return (
+        supabase
+        .table("reminders")
+        .insert(data)
+        .execute()
+    )
+
 def fetch_recent(channel):
     response = (
         supabase
