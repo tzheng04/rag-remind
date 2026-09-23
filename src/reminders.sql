@@ -1,6 +1,7 @@
 CREATE TABLE reminders (
     id SERIAL PRIMARY KEY,
     message_id INTEGER REFERENCES messages(id),
+    author_id BIGINT NOT NULL,
     title TEXT NOT NULL,
     year INT,
     month INT,
