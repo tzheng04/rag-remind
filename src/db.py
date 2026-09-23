@@ -27,8 +27,11 @@ def save_message(message):
         .execute()
     )
 
-def save_reminder(reminder):
-    data = reminder.model_dump()
+def save_reminder(reminder, message):
+    response = save_message(message)
+    message_id = response.data[0]["id"]
+    data = reminder.model_dump(mode="json")
+    data["message_id"] = message_id
 
     return (
         supabase

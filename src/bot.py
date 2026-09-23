@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 
-from db import save_message, save_reminder, fetch_recent
+from db import save_reminder, fetch_recent
 from parse import check_important
 from extraction import extract_reminder
 
@@ -59,7 +59,7 @@ async def on_message(message):
     if (check_important(message.content)):
         reminder = extract_reminder(message.content, message.created_at.isoformat())
         print(reminder)
-        save_reminder(reminder)
+        save_reminder(reminder, message)
         await message.channel.send(f"You said {message.content}: reminder saved")
     else:
         await message.channel.send(f"You said {message.content}: no reminder found")

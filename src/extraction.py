@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 from openai import OpenAI
 from pydantic import BaseModel
+from datetime import date
 from typing import Optional
 
 SYSTEM_PROMPT = """
@@ -20,9 +21,20 @@ SYSTEM_PROMPT = """
     Unless explicitly stated otherwise, interpret all times to America/New_York timezone.
     
     If a month or date is provided without the year, use the next occurrence that is not in the past relative to the provided message timestamp.
-    For example:
+    Examples:
     - If the message timestamp is February 12, 2026 and the user says "in March", use March 2026.
     - If the message timestamp is February 12, 2026 and the user says "in January", use January 2027.
+    
+    Interpret “next week” as the next Monday through Sunday after the week containing the message timestamp.
+    Use "range_start" and "range_end" only when the message refers to a span of dates.
+    Examples:
+    - "next week" → use range_start and range_end
+    - "this weekend" → use range_start and range_end
+    - "October 3 through October 7" → use range_start and range_end
+    - "in October" → use year and month; leave range_start and range_end null
+    - "next year" → use year; leave range_start and range_end null
+    - "Friday" → use year, month, and day; leave range_start and range_end null
+    Do not populate both the date component fields and the range fields for the same temporal expression unless necessary to preserve information.
 
     If a time is provided with no date, use today's date relative to the provided message timestamp.
 
@@ -38,6 +50,8 @@ class Reminder(BaseModel):
     day: Optional[int]
     hour: Optional[int]
     minute: Optional[int]
+    range_start: Optional[date]
+    range_end: Optional[date]
     reminder_type: str
 
 load_dotenv()
