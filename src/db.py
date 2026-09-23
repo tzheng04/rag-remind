@@ -41,7 +41,7 @@ def save_reminder(reminder, message):
     )
 
 def fetch_recent(channel):
-    response = (
+    return (
         supabase
         .table("messages")
         .select("author_name, content, created_at")
@@ -50,5 +50,3 @@ def fetch_recent(channel):
         .limit(5)
         .execute()
     )
-
-    return response.data

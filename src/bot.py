@@ -30,7 +30,7 @@ async def on_ready():
 
 @tree.command(name="recent", description="Show recent stored messages")
 async def recent(interaction: discord.Interaction):
-    recent_messages = fetch_recent(TRACKED_CHANNEL)
+    recent_messages = fetch_recent(TRACKED_CHANNEL).data
 
     if not recent_messages:
         await interaction.response.send_message("No recent messages")
@@ -42,6 +42,11 @@ async def recent(interaction: discord.Interaction):
         response.append(f"{message['author_name']}: {message['content']}")
 
     await interaction.response.send_message("\n".join(response))
+
+@tree.command(name="showreminders", description="Show your reminders")
+async def showReminders(interaction: discord.Interaction):
+    # stored_reminders = fetch_reminders(interaction.member.user.id)
+    await interaction.response.send_message(interaction.user.id)
 
 @client.event
 async def on_message(message):
