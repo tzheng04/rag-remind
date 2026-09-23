@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 
-from db import save_reminder, fetch_recent
+from db import save_reminder, fetch_recent, fetch_reminders
 from parse import check_important
 from extraction import extract_reminder
 
@@ -45,8 +45,21 @@ async def recent(interaction: discord.Interaction):
 
 @tree.command(name="showreminders", description="Show your reminders")
 async def showReminders(interaction: discord.Interaction):
-    # stored_reminders = fetch_reminders(interaction.member.user.id)
-    await interaction.response.send_message(interaction.user.id)
+    stored_reminders = fetch_reminders(interaction.user.id).data
+
+    if not stored_reminders:
+            await interaction.response.send_message("No reminders available")
+            return
+
+    response = []
+
+    for reminder in stored_reminders:
+        if reminder['range_start']:
+            response.append(f"{reminder['range_start']} to {reminder['range_end']}: {reminder['title']}")
+        else:
+            response.append(f"{reminder['year']}-{reminder['month']}-{reminder['day']} at {reminder['hour']}:{reminder['minute']}: {reminder['title']}")
+    
+    await interaction.response.send_message("\n".join(response))
 
 @client.event
 async def on_message(message):

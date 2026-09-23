@@ -51,3 +51,18 @@ def fetch_recent(channel):
         .limit(5)
         .execute()
     )
+
+def fetch_reminders(user_id):
+    return (
+        supabase
+        .table("reminders")
+        .select("*")
+        .eq("author_id", user_id)
+        .order("range_start")
+        .order("year")
+        .order("month")
+        .order("day")
+        .order("hour")
+        .order("minute")
+        .execute()
+    )
