@@ -46,7 +46,7 @@ async def recent(interaction: discord.Interaction):
     await interaction.response.send_message("\n".join(response))
 
 @tree.command(name="showreminders", description="Show your reminders")
-async def showReminders(interaction: discord.Interaction):
+async def show_reminders(interaction: discord.Interaction):
     stored_reminders = fetch_reminders(interaction.user.id).data
 
     if not stored_reminders:
