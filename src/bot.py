@@ -4,6 +4,8 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 
+import calendar
+from datetime import datetime
 from db import save_reminder, fetch_recent, fetch_reminders
 from parse import check_important
 from extraction import extract_reminder
@@ -52,12 +54,38 @@ async def showReminders(interaction: discord.Interaction):
             return
 
     response = []
+    datetimeless = []
 
+    # probably want to move this whole thing to another file later
     for reminder in stored_reminders:
-        if reminder['range_start']:
-            response.append(f"{reminder['range_start']} to {reminder['range_end']}: {reminder['title']}")
+        reminder_string = ""
+        if reminder["day"]:
+            date_str = f"{reminder['month']}-{reminder['day']}-{reminder['year']}"
+            date = datetime.strptime(date_str, "%m-%d-%Y")
+            reminder_string += f"{date.strftime('%a')}. {date.month}-{date.day}-{date.year}"
+            if reminder["range_end"]:
+                range_end_datetime = datetime.strptime(reminder["range_end"], "%Y-%m-%d")
+                reminder_string += f" to {range_end_datetime.strftime('%a')}. {range_end_datetime.month}-{range_end_datetime.day}-{range_end_datetime.year}"
+            if reminder["minute"] is not None:
+                time_str = f"{reminder['hour']}:{reminder['minute']}"
+                time = datetime.strptime(time_str, "%H:%M")
+                reminder_string += f" at {time.hour % 12 or 12}:{time.minute:02d} {'AM' if time.hour < 12 else 'PM'}"
+        elif reminder["month"]:
+            reminder_string += f"{calendar.month_abbr[reminder['month']]}. {reminder['year']}"
+        elif reminder["year"]:
+            reminder_string += f"{reminder['year']}"
         else:
-            response.append(f"{reminder['year']}-{reminder['month']}-{reminder['day']} at {reminder['hour']}:{reminder['minute']}: {reminder['title']}")
+            datetimeless.append(f"{reminder['title']}")
+            continue
+        reminder_string += f": {reminder['title']}"
+        response.append(reminder_string)
+
+    # handles reminders without datetime
+    if datetimeless:
+        response.append("")
+        response.append("To do:")
+        for reminder in datetimeless:
+            response.append(reminder)
     
     await interaction.response.send_message("\n".join(response))
 
