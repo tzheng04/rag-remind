@@ -28,8 +28,16 @@ def save_message(message):
     )
 
 def save_reminder(reminder, message):
+    # save_message() and retain id for fk relation
     response = save_message(message)
     message_id = response.data[0]["id"]
+
+    # fill in year, month, and day fields for easier querying later
+    if reminder.range_start:
+        reminder.year = reminder.range_start.year
+        reminder.month = reminder.range_start.month
+        reminder.day = reminder.range_start.day    
+
     data = reminder.model_dump(mode="json")
     data["message_id"] = message_id
     data["author_id"] = message.author.id
@@ -58,7 +66,6 @@ def fetch_reminders(user_id):
         .table("reminders")
         .select("*")
         .eq("author_id", user_id)
-        .order("range_start")
         .order("year")
         .order("month")
         .order("day")
