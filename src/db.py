@@ -73,3 +73,29 @@ def fetch_reminders(user_id):
         .order("minute")
         .execute()
     )
+
+def delete_reminder(reminder_id, user_id):
+    response = (
+        supabase
+        .table("reminders")
+        .select("id, title")
+        .eq("id", reminder_id)
+        .eq("author_id", user_id)
+        .execute()
+    )
+
+    if not response.data:
+        return f"Failed to delete reminder #{reminder_id}"
+
+    reminder = response.data[0]
+
+    (
+        supabase
+        .table("reminders")
+        .delete()
+        .eq("id", reminder_id)
+        .execute()
+    )
+
+    return f"Successfully deleted reminder #{reminder_id}: {reminder['title']}"
+    

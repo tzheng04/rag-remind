@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 import calendar
 from datetime import datetime
-from db import save_reminder, fetch_recent, fetch_reminders
+from db import save_reminder, fetch_recent, fetch_reminders, delete_reminder
 from parse import check_important
 from extraction import extract_reminder
 
@@ -88,6 +88,14 @@ async def showReminders(interaction: discord.Interaction):
             response.append(reminder)
     
     await interaction.response.send_message("\n".join(response))
+
+@tree.command(name="delete", description="Delete a reminder")
+async def delete(interaction: discord.Interaction, reminder_id: int):
+    user_id = interaction.user.id
+
+    response = delete_reminder(reminder_id, user_id)
+
+    await interaction.response.send_message(response)
 
 @client.event
 async def on_message(message):
