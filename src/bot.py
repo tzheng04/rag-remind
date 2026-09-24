@@ -75,10 +75,10 @@ async def showReminders(interaction: discord.Interaction):
         elif reminder["year"]:
             reminder_string += f"{reminder['year']}"
         else:
-            datetimeless.append(f"{reminder['title']}")
+            datetimeless.append(f"{reminder['title']} (ID: {reminder['id']})")
             continue
         reminder_string += f": {reminder['title']}"
-        response.append(reminder_string)
+        response.append(f"{reminder_string} (ID: {reminder['id']})")
 
     # handles reminders without datetime
     if datetimeless:
