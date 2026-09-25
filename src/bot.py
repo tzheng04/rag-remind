@@ -88,9 +88,9 @@ async def on_message(message):
         reminder = extract_reminder(message.content, message.created_at.isoformat())
         print(reminder)
         save_reminder(reminder, message)
-        await message.channel.send(f"You said {message.content}: reminder saved")
-    else:
-        await message.channel.send(f"You said {message.content}: no reminder found")
+        await message.channel.send(f"Saved reminder: {reminder}")
+    # else:
+        # await message.channel.send(f"You said {message.content}: no reminder found")
 
     # save_message(message)
 
