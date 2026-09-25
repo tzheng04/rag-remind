@@ -9,7 +9,7 @@ CREATE TABLE recurring_reminders (
     frequency TEXT NOT NULL,
     interval_value INTEGER NOT NULL DEFAULT 1,
 
-    weekday INTEGER,
+    weekdays INTEGER[],
     day_of_month INTEGER,
     month INTEGER,
 
@@ -18,7 +18,7 @@ CREATE TABLE recurring_reminders (
 
     start_date DATE,
     end_date DATE,
-    
+
     next_reminder TIMESTAMPTZ,
     active BOOLEAN NOT NULL DEFAULT TRUE
 );
