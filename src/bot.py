@@ -4,10 +4,10 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 
-from db import save_reminder, fetch_recent, fetch_reminders, delete_reminder
-from parse import check_important
-from utils import process_reminders
-from extraction import extract_reminder
+from functions.db import save_reminder, fetch_recent, fetch_reminders, delete_reminder
+from functions.parse import check_important
+from functions.utils import process_reminders
+from functions.extraction import extract_reminder
 
 load_dotenv()
 
