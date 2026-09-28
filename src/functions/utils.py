@@ -1,5 +1,9 @@
 import calendar
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
+from dateutil.relativedelta import relativedelta
+
+TZ = ZoneInfo("America/New_York")
 
 def process_reminders(reminders):
     expired = []
@@ -57,3 +61,104 @@ def process_reminders(reminders):
     }
 
     return response
+
+def calculate_next_recurring(recurring_reminder):
+    now = datetime.now(TZ)
+    today = now.date()
+
+    # Defaults to 8AM if no time was provided by the user when creating the reminder
+    hour = recurring_reminder.hour if recurring_reminder.hour is not None else 8
+    minute = recurring_reminder.minute if recurring_reminder.minute is not None else 0
+
+    if recurring_reminder.frequency == "daily":
+        candidate = recurring_reminder.start_date + timedelta(days=recurring_reminder.interval_value)
+
+        # Ensures we generate a valid date in the future
+        while (candidate < today):
+            candidate += timedelta(days=recurring_reminder.interval_value)
+        
+        candidate_datetime = datetime(
+            candidate.year,
+            candidate.month,
+            candidate.day,
+            hour,
+            minute,
+            tzinfo=TZ
+        )
+        
+        return candidate_datetime
+            
+
+    elif recurring_reminder.frequency == "weekly":
+        # Monday of the start_date week
+        start = recurring_reminder.start_date - timedelta(days=recurring_reminder.start_date.weekday())
+
+        # Try days up to a year until we find a day that matches the recurrence
+        for days in range(0, 366):
+            candidate = today + timedelta(days=days)
+
+            if candidate.weekday() not in recurring_reminder.weekdays:
+                continue
+
+            # Monday of the candidate week
+            candidate_start = candidate - timedelta(days=candidate.weekday())
+
+            # Check that weeks_elapsed matches the interval (i.e. every week, every two weeks, etc)
+            weeks_elapsed = (candidate_start - start).days // 7
+            if weeks_elapsed % recurring_reminder.interval_value != 0:
+                continue
+
+            candidate_datetime = datetime(
+                candidate.year,
+                candidate.month,
+                candidate.day,
+                hour,
+                minute,
+                tzinfo=TZ
+            )
+            if candidate_datetime <= now:
+                continue
+
+            return candidate_datetime
+
+    elif recurring_reminder.frequency == "monthly":
+        start = recurring_reminder.start_date
+        candidate = start + timedelta(months=recurring_reminder.interval_value)
+
+        # Ensures we generate a valid date in the future
+        while (candidate < today):
+            candidate += timedelta(months=recurring_reminder.interval_value)
+
+        candidate_datetime = datetime(
+            candidate.year,
+            candidate.month,
+            recurring_reminder.day_of_month,
+            hour,
+            minute,
+            tzinfo=TZ
+        )
+
+        return candidate_datetime
+
+    elif recurring_reminder.frequency == "yearly":
+        # Prepare default values
+        month = recurring_reminder.month if recurring_reminder.month is not None else recurring_reminder.start_date.month
+        day = recurring_reminder.day_of_month if recurring_reminder.day_of_month is not None else recurring_reminder.start_date.day
+
+        start = recurring_reminder.start_date
+        candidate = start + timedelta(years=recurring_reminder.interval_value)
+
+        # Ensures we generate a valid date in the future
+        while (candidate < today):
+            candidate += timedelta(years=recurring_reminder.interval_value)
+
+        candidate_datetime = datetime(
+            candidate.year,
+            month,
+            day,
+            hour,
+            minute,
+            tzinfo=TZ
+        )
+
+        return candidate_datetime
