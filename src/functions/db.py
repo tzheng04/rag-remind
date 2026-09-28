@@ -78,7 +78,7 @@ def delete_reminder(reminder_id, user_id):
     response = (
         supabase
         .table("reminders")
-        .select("id, title")
+        .select("id, message_id, title")
         .eq("id", reminder_id)
         .eq("author_id", user_id)
         .execute()
@@ -88,12 +88,21 @@ def delete_reminder(reminder_id, user_id):
         return f"Failed to delete reminder #{reminder_id}"
 
     reminder = response.data[0]
+    message_id = reminder["message_id"]
 
     (
         supabase
         .table("reminders")
         .delete()
         .eq("id", reminder_id)
+        .execute()
+    )
+
+    (
+        supabase
+        .table("messages")
+        .delete()
+        .eq("id", message_id)
         .execute()
     )
 
