@@ -49,6 +49,24 @@ def save_reminder(reminder, message):
         .execute()
     )
 
+def save_recurring(reminder, message):
+    # save_message() and retain id for fk relation
+    response = save_message(message)
+    message_id = response.data[0]["id"]
+
+    # determine next_reminder TODO
+
+    data = reminder.model_dump(mode="json")
+    data["message_id"] = message_id
+    data["author_id"] = message.author.id
+
+    return (
+        supabase    
+        .table("reminders")
+        .insert(data)
+        .execute()
+    )
+
 def fetch_recent(channel):
     return (
         supabase
