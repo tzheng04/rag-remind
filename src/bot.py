@@ -5,9 +5,9 @@ from discord import app_commands
 from dotenv import load_dotenv
 
 from functions.db import save_reminder, fetch_recent, fetch_reminders, delete_reminder
-from functions.parse import check_important
-from functions.utils import process_reminders
-from functions.extraction import extract_reminder
+from functions.parse import check_important, check_recurring
+from functions.utils import process_reminders, calculate_next_recurring
+from functions.extraction import extract_reminder, extract_recurring
 
 load_dotenv()
 
@@ -84,7 +84,13 @@ async def on_message(message):
     #     message.channel,
     #     message.content
     # )
-    if (check_important(message.content)):
+    if (check_recurring(message.content)):
+        reminder = extract_recurring(message.content, message.created_at.isoformat())
+        print(reminder)
+        next_date = calculate_next_recurring(reminder)
+        await message.channel.send(f"Saved recurring reminder: {reminder}")
+        await message.channel.send(f"Next reminder: {next_date}")
+    elif (check_important(message.content)):
         reminder = extract_reminder(message.content, message.created_at.isoformat())
         print(reminder)
         save_reminder(reminder, message)
