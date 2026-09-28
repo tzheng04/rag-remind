@@ -60,7 +60,7 @@ RECURRING_SYSTEM_PROMPT = """
     - "interval_value": number of frequency units between occurrences. Default to 1 when recurrence is specified but no interval is given.
     - "weekdays": list of weekdays associated with a weekly recurrence, using Monday = 0 through Sunday = 6, or null if not applicable
     - "day_of_month": day of the month from 1 through 31 for monthly or yearly recurrence, or null if not applicable
-    - "start_date": date on which the recurring reminder becomes active, or null if no explicit start date is provided
+    - "start_date": the earliest date on or after the message timestamp that matches the recurrence pattern
     - "end_date": date after which the recurring reminder should stop, or null if no end date is provided
 
     Use the provided message timestamp as the reference point for relative dates such as "today", "tomorrow", "next week", and similar expressions.
@@ -83,7 +83,7 @@ RECURRING_SYSTEM_PROMPT = """
     Example:
     - "every Wednesday at 7 PM" → frequency = "weekly", interval_value = 1, weekdays = [2], hour = 19, minute = 0
 
-    If the user specifies when the recurrence should begin, populate start_date.
+    Always populate the start_date as the first day recurring reminder becomes active and from which the recurrence schedule is anchored.
     Examples:
     - "starting next Monday, remind me every week..." → resolve next Monday relative to the message timestamp and use it as start_date
     - "every Friday starting October 2" → use October 2 as start_date
@@ -121,7 +121,7 @@ class RecurringReminder(BaseModel):
     month: int | None = Field(default=None, ge=1, le=12)
     hour: int | None = Field(default=None, ge=0, le=23)
     minute: int | None = Field(default=None, ge=0, le=59)
-    start_date: date | None = None
+    start_date: date
     end_date: date | None = None
 
 load_dotenv()
