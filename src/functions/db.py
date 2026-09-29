@@ -2,6 +2,8 @@ import os
 
 from dotenv import load_dotenv
 from supabase import Client, create_client
+from functions.utils import calculate_next_recurring
+from functions.extraction import Reminder, RecurringReminder, RecurringReminderExtraction
 
 load_dotenv()
 
@@ -27,7 +29,7 @@ def save_message(message):
         .execute()
     )
 
-def save_reminder(reminder, message):
+def save_reminder(reminder: Reminder, message):
     # save_message() and retain id for fk relation
     response = save_message(message)
     message_id = response.data[0]["id"]
@@ -49,21 +51,52 @@ def save_reminder(reminder, message):
         .execute()
     )
 
-def save_recurring(reminder, message):
+def save_recurring(recurring_reminder_extraction: RecurringReminderExtraction, message):
     # save_message() and retain id for fk relation
     response = save_message(message)
     message_id = response.data[0]["id"]
 
-    # determine next_reminder TODO
+    # Create a RecurringReminder object to pass into calculate_next_recurring()
+    recurring_reminder = RecurringReminder(
+        **recurring_reminder_extraction.model_dump(),
+        reminder_id = None,
+        message_id = message_id,
+        author_id = message.author.id,
+        last_reminder_date = recurring_reminder_extraction.start_date,
+        next_reminder = None
+    )
+    recurring_reminder.next_reminder = calculate_next_recurring(recurring_reminder)
 
-    data = reminder.model_dump(mode="json")
-    data["message_id"] = message_id
-    data["author_id"] = message.author.id
+    response = generate_next_reminder(recurring_reminder)
+    reminder_id = response.data[0]["id"]
+    recurring_reminder.reminder_id = reminder_id
+
+    data = recurring_reminder.model_dump(mode="json")
 
     return (
         supabase    
-        .table("reminders")
+        .table("recurring_reminders")
         .insert(data)
+        .execute()
+    )
+
+def generate_next_reminder(recurring_reminder: RecurringReminder):
+    reminder = {
+        "message_id": recurring_reminder.message_id,
+        "author_id": recurring_reminder.author_id,
+        "title": recurring_reminder.title,
+        "year": recurring_reminder.next_reminder.year,
+        "month": recurring_reminder.next_reminder.month,
+        "day": recurring_reminder.next_reminder.day,
+        "hour": recurring_reminder.next_reminder.hour,
+        "minute": recurring_reminder.next_reminder.minute,
+        "reminder_type": "recurring",
+    }
+
+    return (
+        supabase
+        .table("reminders")
+        .insert(reminder)
         .execute()
     )
 
@@ -125,4 +158,4 @@ def delete_reminder(reminder_id, user_id):
     )
 
     return f"Successfully deleted reminder #{reminder_id}: {reminder['title']}"
-    
+
