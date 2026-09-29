@@ -1,6 +1,6 @@
 CREATE TABLE recurring_reminders (
     id SERIAL PRIMARY KEY,
-    reminder_id INTEGER REFERENCES reminders(id)
+    reminder_id INTEGER REFERENCES reminders(id),
     message_id INTEGER REFERENCES messages(id),
     author_id BIGINT NOT NULL,
 
@@ -21,7 +21,7 @@ CREATE TABLE recurring_reminders (
     end_date DATE,
 
     next_reminder TIMESTAMPTZ,
-    last_anchor_date DATE
+    last_reminder_date DATE,
 
     active BOOLEAN NOT NULL DEFAULT TRUE
 );
