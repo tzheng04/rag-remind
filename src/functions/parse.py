@@ -43,11 +43,11 @@ RECURRING_KEYWORDS = {
 DATE_REGEX = r"\b\d{1,2}/\d{1,2}\b"
 
 def check_important(str):
-    str = str.lower()
+    words = re.findall(r"\b\w+\b", str.lower())
 
-    return any(token in str for token in KEYWORDS) or bool(re.search(DATE_REGEX, str))
+    return any(token in words for token in KEYWORDS) or bool(re.search(DATE_REGEX, str))
 
 def check_recurring(str):
-    str = str.lower()
+    words = re.findall(r"\b\w+\b", str.lower())
     
-    return any(token in str for token in RECURRING_KEYWORDS)
+    return any(token in words for token in RECURRING_KEYWORDS)
