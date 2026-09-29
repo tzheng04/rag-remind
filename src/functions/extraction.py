@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 from openai import OpenAI
 from pydantic import BaseModel, Field
-from datetime import date
+from datetime import date, datetime
 from typing import Annotated, Literal
 
 SYSTEM_PROMPT = """
@@ -83,10 +83,12 @@ RECURRING_SYSTEM_PROMPT = """
     Example:
     - "every Wednesday at 7 PM" → frequency = "weekly", interval_value = 1, weekdays = [2], hour = 19, minute = 0
 
-    Always populate the start_date as the first day recurring reminder becomes active and from which the recurrence schedule is anchored.
+    Always populate the start_date as the first day reminder becomes active and from which the recurrence schedule is anchored.
     Examples:
+    - "remind me every Thursday at 4pm..." → use the nearest occurence of Thursday, 4PM that is not in the past relative to the message timestamp and use it as start_date
     - "starting next Monday, remind me every week..." → resolve next Monday relative to the message timestamp and use it as start_date
     - "every Friday starting October 2" → use October 2 as start_date
+    Consider that it is acceptable for the start_date to match the date of the message timestamp.
 
     If the user specifies when the recurrence should stop, populate end_date.
     Examples:
@@ -111,7 +113,7 @@ class Reminder(BaseModel):
 
 Weekday = Annotated[int, Field(ge=0, le=6)]
 
-class RecurringReminder(BaseModel):
+class RecurringReminderExtraction(BaseModel):
     title: str
     reminder_type: Literal["task", "event", "reminder"]
     frequency: Literal["daily", "weekly", "monthly", "yearly"]
@@ -123,6 +125,14 @@ class RecurringReminder(BaseModel):
     minute: int | None = Field(default=None, ge=0, le=59)
     start_date: date
     end_date: date | None = None
+
+class RecurringReminder(RecurringReminderExtraction):
+    reminder_id: int | None = None
+    message_id: int | None = None
+    author_id: int | None = None
+    next_reminder: datetime | None = None
+    last_reminder_date: date | None = None
+    active: bool = True
 
 load_dotenv()
 OPENAI_KEY = os.getenv("OPENAI_KEY")
@@ -166,7 +176,7 @@ def extract_recurring(message, timestamp):
                 """
             }
         ],
-        text_format=RecurringReminder
+        text_format=RecurringReminderExtraction
     )
 
     return response.output_parsed
