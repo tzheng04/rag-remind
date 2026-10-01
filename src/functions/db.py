@@ -81,6 +81,30 @@ def save_recurring(recurring_reminder_extraction: RecurringReminderExtraction, m
     )
 
 def generate_next_reminder(recurring_reminder: RecurringReminder):
+    # Check if reminder already exists, in this case update it
+    response = (
+        supabase
+        .table("reminders")
+        .select("id")
+        .eq("id", recurring_reminder.reminder_id)
+        .execute()
+    )
+
+    if response.data:
+        return (
+            supabase
+            .table("reminders")
+            .update({
+                "year": recurring_reminder.next_reminder.year,
+                "month": recurring_reminder.next_reminder.month,
+                "day": recurring_reminder.next_reminder.day,
+                "hour": recurring_reminder.next_reminder.hour,
+                "minute": recurring_reminder.next_reminder.minute,
+            })
+            .eq("id", recurring_reminder.reminder_id)
+            .execute()
+        )
+
     reminder = {
         "message_id": recurring_reminder.message_id,
         "author_id": recurring_reminder.author_id,
@@ -125,11 +149,44 @@ def fetch_reminders(user_id):
         .execute()
     )
 
+def fetch_recurring_updates(now):
+    return (
+        supabase
+        .table("recurring_reminders")
+        .select("*")
+        .eq("active", True)
+        .lte("next_reminder", now.isoformat())
+        .execute()
+    )
+
+def update_recurring(now):
+    outdated_recurring_reminders = fetch_recurring_updates(now)
+
+    for recurring_reminder_dict in outdated_recurring_reminders.data:
+        recurring_reminder = RecurringReminder(**recurring_reminder_dict)
+        next_reminder = calculate_next_recurring(recurring_reminder)
+
+        (
+            supabase
+            .table("recurring_reminders")
+            .update({
+                "next_reminder": next_reminder.isoformat(),
+                "last_reminder_date": recurring_reminder.next_reminder.date().isoformat(),
+            })
+            .eq("reminder_id", recurring_reminder.reminder_id)
+            .execute()
+        )
+
+        recurring_reminder.next_reminder = next_reminder
+        generate_next_reminder(recurring_reminder)
+
+    print("Finished updating recurring reminders")
+
 def delete_reminder(reminder_id, user_id):
     response = (
         supabase
         .table("reminders")
-        .select("id, message_id, title")
+        .select("id, message_id, title, reminder_type")
         .eq("id", reminder_id)
         .eq("author_id", user_id)
         .execute()
@@ -140,6 +197,10 @@ def delete_reminder(reminder_id, user_id):
 
     reminder = response.data[0]
     message_id = reminder["message_id"]
+    reminder_type = reminder["reminder_type"]
+
+    if (reminder_type == "recurring"):
+        delete_recurring(reminder_id, user_id)
 
     (
         supabase
@@ -157,5 +218,19 @@ def delete_reminder(reminder_id, user_id):
         .execute()
     )
 
-    return f"Successfully deleted reminder #{reminder_id}: {reminder['title']}"
+    if (reminder_type == "recurring"):
+        return f"Successfully deleted recurring reminder associated with #{reminder_id}: {reminder['title']}"
+    else:
+        return f"Successfully deleted reminder #{reminder_id}: {reminder['title']}"
+
+def delete_recurring(reminder_id):
+    (
+        supabase
+        .table("recurring_reminders")
+        .delete()
+        .eq("id", reminder_id)
+        .execute()
+    )
+
+    return f"Successfully deleted recurring reminder associated with #{reminder_id}"
 
