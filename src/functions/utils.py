@@ -47,6 +47,8 @@ def process_reminders(reminders):
         else:
             datetimeless.append(f"{reminder['title']} (ID: {reminder['id']})")
             continue
+        if reminder["reminder_type"] == "recurring":
+            reminder_string += f" (Recurring)"
         reminder_string += f": {reminder['title']}"
         if past:
             expired.append(f"{reminder_string} (ID: {reminder['id']})")
