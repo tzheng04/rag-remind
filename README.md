@@ -10,4 +10,5 @@ Structured data is stored in Supabase/PostgreSQL and support retrieval through a
 - Implement natural language querying for personal reminders
 - Use RAG on conversation history
 - Add privacy settings
+- Improve how reminders are displayed
 - Containerization and deployment
