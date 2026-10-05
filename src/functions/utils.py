@@ -2,9 +2,22 @@ import calendar
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from functions.extraction import RecurringReminder
+
+# Defaults to America East timezone
 TZ = ZoneInfo("America/New_York")
 
-def process_reminders(reminders):
+def process_reminders(reminders: list[dict]) -> dict:
+    """
+    Iterate through a list of reminders and convert them to strings. Use fetch_reminders() to get appropriate results.
+
+    Args:
+        reminders: List of reminders as dicts, ordered by time through fetch_reminders().
+
+    Returns:
+        Dict with keys "Past reminders", "Current reminders", and "To do", each containing lists of strings.
+    """
+    # Initialize our three groups of reminders
     expired = []
     regular = []
     datetimeless = []
@@ -12,49 +25,81 @@ def process_reminders(reminders):
     now = datetime.now()
     date_today = date.today()
 
+    # Iterate through reminders and conditionally generate the resultant string
     for reminder in reminders:
         reminder_string = ""
         past = False
         today = False
+
+        # Check if the reminder has a specific date defined.
         if reminder["day"]:
+            # Create a date object for comparison
             date_str = f"{reminder['month']}-{reminder['day']}-{reminder['year']}"
             reminder_date = datetime.strptime(date_str, "%m-%d-%Y").date()
-            # For date ranges check the range_end instead
+
+            # Check if the reminder is expired.
+            # For date ranges check the range_end instead.
             if not reminder["range_end"] and reminder_date < date_today:
                 past = True
             elif reminder_date == date_today:
                 today = True
+
+            # Add the weekday and date
             reminder_string += f"{reminder_date.strftime('%a')}. {reminder_date.month}-{reminder_date.day}-{reminder_date.year}"
+
+            # If a date range was provided, check if the reminder is expired.
             if reminder["range_end"]:
                 range_end_date = datetime.strptime(reminder["range_end"], "%Y-%m-%d").date()
                 if range_end_date < date_today:
                     past = True
+                # Add the range_end to the string
                 reminder_string += f" to {range_end_date.strftime('%a')}. {range_end_date.month}-{range_end_date.day}-{range_end_date.year}"
+
+            # If a time was provided, add the time to the string.
             if reminder["minute"] is not None:
                 time_str = f"{reminder['hour']}:{reminder['minute']}"
                 time = datetime.strptime(time_str, "%H:%M").time()
+                # Check if the reminder is expired.
                 if today and time < now.time():
                     past = True
+                # Add the time and AM or PM
                 reminder_string += f" at {time.hour % 12 or 12}:{time.minute:02d} {'AM' if time.hour < 12 else 'PM'}"
+
+        # If no day was provided, check if the month was provided.
         elif reminder["month"]:
+            # Check if the reminder is expired.
             if reminder['year'] < now.year and reminder['month'] < now.month:
                 past = True
+            # Add the month and year.
             reminder_string += f"{calendar.month_abbr[reminder['month']]}. {reminder['year']}"
+
+        # If no month was provided, check if the year was provided.
         elif reminder["year"]:
+            # Check if the reminder is expired.
             if reminder['year'] < now.year:
-                            past = True
+                past = True
+            # Add the year.
             reminder_string += f"{reminder['year']}"
+
+        # If no time references were provided, the reminder is datetimeless.
         else:
+            # Add the title and ID to the list and move on to the next reminder.
             datetimeless.append(f"{reminder['title']} (ID: {reminder['id']})")
             continue
+
+        # Add the Recurring indicator to any recurring reminders. Note that datetimeless reminders cannot be recurring by definition.
         if reminder["reminder_type"] == "recurring":
             reminder_string += f" (Recurring)"
+
+        # Add the reminder title to all non-datetimeless reminders
         reminder_string += f": {reminder['title']}"
+
+        # Sort into expired or regular reminders
         if past:
             expired.append(f"{reminder_string} (ID: {reminder['id']})")
         else:
             regular.append(f"{reminder_string} (ID: {reminder['id']})")
-    
+
     response = {
          "Past reminders": expired,
          "Current reminders": regular,
@@ -63,7 +108,16 @@ def process_reminders(reminders):
 
     return response
 
-def calculate_next_recurring(recurring_reminder):
+def calculate_next_recurring(recurring_reminder: RecurringReminder) -> datetime:
+    """
+    Calculate the next valid recurrence for a reminder. Defaults to 8AM if no time is provided.
+
+    Args:
+        recurring_reminder: RecurringReminder object. Requires last_reminder_date to be valid.
+
+    Returns:
+        datetime object representing the next valid occurence
+    """
     now = datetime.now(TZ)
     today = now.date()
 
