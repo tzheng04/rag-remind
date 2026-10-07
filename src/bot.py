@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import tasks
 from dotenv import load_dotenv
 
-from functions.db import save_reminder, save_recurring, fetch_recent, fetch_reminders, delete_reminder, update_recurring
+from functions.db import save_reminder, save_recurring, fetch_recent, fetch_reminders, delete_reminder, send_reminders, update_recurring
 from functions.parse import check_important, check_recurring
 from functions.utils import process_reminders
 from functions.extraction import extract_reminder, extract_recurring
@@ -30,8 +30,15 @@ TRACKED_CHANNEL = 1549134537458450542
 
 @tasks.loop(seconds=30)
 async def update_recurring_loop():
+    channel = client.get_channel(TRACKED_CHANNEL)
+
     now = datetime.now(TZ)
 
+    reminders = send_reminders(now)
+    if reminders:
+        for reminder in reminders:
+            await channel.send(reminder)
+            
     update_recurring(now)
     
 @client.event

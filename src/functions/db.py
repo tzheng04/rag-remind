@@ -220,6 +220,73 @@ def fetch_reminders(user_id: int):
         .execute()
     )
 
+def fetch_reminders_today(now: datetime):
+    """
+    Helper function fetching reminders to be handled by send_reminders() in loop
+
+    Args:
+        now: datetime object representing the current time
+
+    Returns:
+        Supabase API response object from fetching today's reminders
+    """
+    # Returns only rows that match the current date and time. 
+    # Rows with nulls in these fields are skipped.
+    # Past reminders are also skipped.
+    year = now.year
+    month = now.month
+    day = now.day
+    hour = now.hour
+    minute = now.minute
+    return (
+        supabase
+        .table("reminders")
+        .select("id, title, reminder_type, author_id")
+        .eq("year", year)
+        .eq("month", month)
+        .eq("day", day)
+        .eq("hour", hour)
+        .eq("minute", minute)
+        .neq("reminder_type", "expired")
+        .execute()
+    )
+
+def update_reminders_today(reminder_id: int):
+    """
+    Updates reminder_type to expired after sending reminder to user. To be used by send_reminders().
+
+    Args:
+        reminder_id: ID of expired reminder to be updated.
+
+    Returns:
+        Supabase API response from updating row.
+    """
+    return (
+        supabase
+        .table("reminders")
+        .update({"reminder_type": "expired"})
+        .eq("id", reminder_id)
+        .execute()
+    )
+
+def send_reminders(now: datetime) -> list[str]:
+    response = fetch_reminders_today(now)
+
+    due_reminders = []
+        
+    if not response.data:
+        return due_reminders
+    
+    for reminder in response.data:
+        due_reminders.append(f"<@{reminder['author_id']}>, {reminder['title']} (ID: {reminder['id']})")
+
+        # Only update non-recurring reminders
+        # Recurring reminders are handled by update_recurring() immediately after checking for expired reminders
+        if reminder['reminder_type'] != "recurring":
+            update_resp = update_reminders_today(reminder['id'])
+
+    return due_reminders
+
 def fetch_recurring_updates(now: datetime):
     """
     Helper function fetching active outdated recurring reminders to be processed by update_recurring()
