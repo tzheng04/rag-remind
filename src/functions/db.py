@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 
-from discord import Message
+from discord import Message, TextChannel
 from supabase import Client, create_client
 from functions.utils import calculate_next_recurring
 from functions.extraction import Reminder, RecurringReminder, RecurringReminderExtraction
@@ -420,3 +420,29 @@ def delete_reminder(reminder_id: int, user_id: int) -> str:
     else:
         return f"Successfully deleted reminder #{reminder_id}: {reminder['title']}"
 
+async def fetch_context(channel: TextChannel, message_id: int) -> str:
+    """
+    Fetches five messages before and five messages after the message with the specified ID
+    
+    Args:
+        channel: Discord TextChannel object
+
+    Returns:
+        String of eleven messages with author and content relating to a reminder.
+    """
+    # Fetch the main message given by the ID
+    main_message =  await channel.fetch_message(message_id)
+
+    # Fetch messages before (note more recent messages come first, so we will have to reverse later)
+    before = [message async for message in channel.history(limit=5, before=main_message)]
+
+    # Fetch messages after (oldest_first is the message right after the main_message)
+    after = [message async for message in channel.history(limit=5, after=main_message, oldest_first=True)]
+
+    # Combine all eleven messages into a list
+    context = list(reversed(before)) + [main_message] + after
+
+    # Generate string
+    output = "\n".join(f"{message.author.display_name}: {message.content}" for message in context)
+
+    return output
