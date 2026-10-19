@@ -223,7 +223,7 @@ def calculate_next_recurring(recurring_reminder: RecurringReminder) -> datetime:
 
         return candidate_datetime
 
-async def fetch_context(channel: TextChannel, message_id: int) -> str:
+async def fetch_conversation(channel: TextChannel, message_id: int) -> str:
     """
     Fetches five messages before and five messages after the message with the specified ID
     
