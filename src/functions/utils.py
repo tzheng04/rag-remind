@@ -4,6 +4,8 @@ from zoneinfo import ZoneInfo
 
 from functions.extraction import RecurringReminder
 
+from discord import TextChannel
+
 # Defaults to America East timezone
 TZ = ZoneInfo("America/New_York")
 
@@ -220,3 +222,31 @@ def calculate_next_recurring(recurring_reminder: RecurringReminder) -> datetime:
         )
 
         return candidate_datetime
+
+async def fetch_context(channel: TextChannel, message_id: int) -> str:
+    """
+    Fetches five messages before and five messages after the message with the specified ID
+    
+    Args:
+        channel: Discord TextChannel object
+        message_id: Discord Message id
+
+    Returns:
+        String of eleven messages with author and content relating to a reminder.
+    """
+    # Fetch the main message given by the ID
+    main_message =  await channel.fetch_message(message_id)
+
+    # Fetch messages before (note more recent messages come first, so we will have to reverse later)
+    before = [message async for message in channel.history(limit=5, before=main_message)]
+
+    # Fetch messages after (oldest_first is the message right after the main_message)
+    after = [message async for message in channel.history(limit=5, after=main_message, oldest_first=True)]
+
+    # Combine all eleven messages into a list
+    context = list(reversed(before)) + [main_message] + after
+
+    # Generate string
+    output = "\n".join(f"{message.author.display_name}: {message.content}" for message in context)
+
+    return output
