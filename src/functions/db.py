@@ -3,10 +3,10 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 
-from discord import Message
+from discord import Message, TextChannel
 from supabase import Client, create_client
-from functions.utils import calculate_next_recurring
-from functions.extraction import Reminder, RecurringReminder, RecurringReminderExtraction
+from functions.utils import calculate_next_recurring, fetch_conversation
+from functions.extraction import Reminder, RecurringReminder, RecurringReminderExtraction, extract_context
 
 load_dotenv()
 
@@ -241,7 +241,7 @@ def fetch_reminders_today(now: datetime):
     return (
         supabase
         .table("reminders")
-        .select("id, title, reminder_type, author_id")
+        .select("id, message_id, title, reminder_type, author_id")
         .eq("year", year)
         .eq("month", month)
         .eq("day", day)
@@ -269,7 +269,35 @@ def update_reminders_today(reminder_id: int):
         .execute()
     )
 
-def send_reminders(now: datetime) -> list[str]:
+def fetch_message_info(message_id: int):
+    """
+    Fetching message and its timestamp for extract_context()
+
+    Args:
+        message_id: Discord message id as an int
+
+    Returns:
+        Supabase API response from fetching the relevant message
+    """
+    return (
+        supabase
+        .table("messages")
+        .select("message_id, channel_id, content, created_at")
+        .eq("id", message_id)
+        .execute()
+    )
+
+async def send_reminders(channel: TextChannel, now: datetime) -> list[str]:
+    """
+    Generates list of reminders to be sent out by tasks.loop
+
+    Args:
+        channel: Discord TextChannel object
+        now: datetime object representing the current time
+
+    Returns:
+        List containing formatted strings to be passed into Discord send()
+    """
     response = fetch_reminders_today(now)
 
     due_reminders = []
@@ -278,7 +306,20 @@ def send_reminders(now: datetime) -> list[str]:
         return due_reminders
     
     for reminder in response.data:
-        due_reminders.append(f"<@{reminder['author_id']}>, {reminder['title']} (ID: {reminder['id']})")
+        message_resp = fetch_message_info(reminder['message_id'])
+        message_data = message_resp.data[0]
+
+        conversation = await fetch_conversation(channel, message_data['message_id'])
+
+        context = extract_context(reminder['title'], message_data['content'], conversation, message_data['created_at'])
+
+        output = f"<@{reminder['author_id']}>, {reminder['title']} (ID: {reminder['id']})"
+
+        if context.useful:
+            output += "\n\n"
+            output += f"Notes: {context.content}"
+
+        due_reminders.append(output)
 
         # Only update non-recurring reminders
         # Recurring reminders are handled by update_recurring() immediately after checking for expired reminders
