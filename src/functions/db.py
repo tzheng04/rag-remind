@@ -426,6 +426,7 @@ async def fetch_context(channel: TextChannel, message_id: int) -> str:
     
     Args:
         channel: Discord TextChannel object
+        message_id: Discord Message id
 
     Returns:
         String of eleven messages with author and content relating to a reminder.
