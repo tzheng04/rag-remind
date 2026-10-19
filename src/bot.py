@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from functions.db import save_reminder, save_recurring, fetch_recent, fetch_reminders, delete_reminder, send_reminders, update_recurring
 from functions.parse import check_important, check_recurring
-from functions.utils import process_reminders
+from functions.utils import process_reminders, fetch_conversation
 from functions.extraction import extract_reminder, extract_recurring
 
 load_dotenv()
@@ -34,7 +34,7 @@ async def update_recurring_loop():
 
     now = datetime.now(TZ)
 
-    reminders = send_reminders(now)
+    reminders = await send_reminders(channel, now)
     if reminders:
         for reminder in reminders:
             await channel.send(reminder)
