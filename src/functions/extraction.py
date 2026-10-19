@@ -100,6 +100,42 @@ RECURRING_SYSTEM_PROMPT = """
     Do not invent missing recurrence components, dates, or times unless they can be explicitly determined from the message or one of the rules above.
 """
 
+CONTEXT_SYSTEM_PROMPT = """
+    You generate concise context for a Discord reminder using the surrounding conversation, reminder title, source message, and the source message's timestamp.
+
+    Identify only conversation details that would be useful when the reminder is delivered.
+
+    Field definitions:
+    - "useful": boolean indicating whether or not useful context could be generated
+    - "content": short string describing the context of the reminder, or None
+
+    Useful context examples:
+    - What activity, task, or event the reminder refers to
+    - Location
+    - People involved
+    - Agreed upon plans
+    - Changes to the time, date, or location
+    - Constraints
+    - Other necessary details
+
+    Use the provided message timestamp as the reference point for relative dates such as "today", "tomorrow", "next week", and similar expressions.
+    Note that the provided timestamp is of the source message.
+    
+    Unless explicitly stated otherwise, interpret all times in the America/New_York timezone.
+
+    Do not invent information or include unrelated conversation.
+
+    Do not repeat information already contained in the reminder.
+
+    Do not assume that messages provided are strictly relevant to the reminder.
+
+    If the context conflicts with the reminder, explain the changes or uncertainties.
+
+    If there is no useful additional context, indicate this by returning useful as False and context as None.
+
+    Keep the context concise.
+"""
+
 class Reminder(BaseModel):
     title: str
     year: int | None = None
@@ -134,12 +170,26 @@ class RecurringReminder(RecurringReminderExtraction):
     last_reminder_date: date | None = None
     active: bool = True
 
+class Context(BaseModel):
+    useful: bool
+    content: str | None
+
 load_dotenv()
 OPENAI_KEY = os.getenv("OPENAI_KEY")
 
 client = OpenAI(api_key=OPENAI_KEY)
 
-def extract_reminder(message, timestamp):
+def extract_reminder(message: str, timestamp: str) -> Reminder:
+    """
+    Extract a Reminder object from a message and a timestamp.
+
+    Args:
+        message: Discord message content
+        timestamp: datetime the message was sent, as a string
+
+    Returns:
+        Reminder object
+    """
     response = client.responses.parse(
         model="gpt-5.6-luna",
         input = [
@@ -160,7 +210,17 @@ def extract_reminder(message, timestamp):
 
     return response.output_parsed
 
-def extract_recurring(message, timestamp):
+def extract_recurring(message: str, timestamp: str) -> RecurringReminderExtraction:
+    """
+    Extract a RecurringReminderExtraction object from a message and a timestamp.
+
+    Args:
+        message: Discord message content
+        timestamp: datetime the message was sent, as a string
+
+    Returns:
+        RecurringReminderExtraction object
+    """
     response = client.responses.parse(
         model="gpt-5.6-luna",
         input = [
@@ -177,6 +237,41 @@ def extract_recurring(message, timestamp):
             }
         ],
         text_format=RecurringReminderExtraction
+    )
+
+    return response.output_parsed
+
+def extract_context(title: str, source: str, conversation: str, timestamp: str) -> Context:
+    """
+    Extract the Context of a reminder.
+
+    Args:
+        title: Reminder title
+        source: Original message that generated the reminder
+        conversation: Discord message history from fetch_context()
+        timestamp: datetime the source message was sent, as a string
+
+    Returns:
+        Context object
+    """
+    response = client.responses.parse(
+        model="gpt-5.6-luna",
+        input = [
+            {
+                "role": "system",
+                "content": CONTEXT_SYSTEM_PROMPT,
+            },
+            {
+                "role": "user",
+                "content": f"""
+                    Timestamp: {timestamp}
+                    Reminder title: {title}
+                    Source message: {source}
+                    Conversation: {conversation}
+                """
+            }
+        ],
+        text_format=Context
     )
 
     return response.output_parsed
