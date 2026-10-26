@@ -17,7 +17,7 @@ KEYWORDS = {
     "appointment", "appt",
     "deadline", "due", "by", "on",
     "finish", "send", "submit", "finalize", "complete",
-    "am", "pm",
+    "at", "am", "pm",
     "month",
     "january", "jan",
     "february", "feb",
@@ -43,6 +43,9 @@ RECURRING_KEYWORDS = {
 # Regex pattern matching dates like 1/1, 2/14, 12/25, etc
 DATE_REGEX = r"\b\d{1,2}/\d{1,2}\b"
 
+# Regex pattern matching times like 09:00, 12:00, 6:22, etc
+TIME_REGEX = r"\b\d{1,2}:\d{1,2}\b"
+
 def check_important(str: str) -> bool:
     """
     Searches string for KEYWORDS or dates
@@ -55,7 +58,7 @@ def check_important(str: str) -> bool:
     """
     words = re.findall(r"\b\w+\b", str.lower())
 
-    return any(token in words for token in KEYWORDS) or bool(re.search(DATE_REGEX, str))
+    return any(token in words for token in KEYWORDS) or bool(re.search(DATE_REGEX, str)) or bool(re.search(TIME_REGEX, str))
 
 def check_recurring(str: str) -> bool:
     """
