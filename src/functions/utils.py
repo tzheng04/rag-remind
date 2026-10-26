@@ -1,5 +1,6 @@
 import calendar
 from datetime import date, datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from zoneinfo import ZoneInfo
 
 from functions.extraction import RecurringReminder
@@ -183,11 +184,11 @@ def calculate_next_recurring(recurring_reminder: RecurringReminder) -> datetime:
 
     elif recurring_reminder.frequency == "monthly":
         start = recurring_reminder.last_reminder_date
-        candidate = start + timedelta(months=recurring_reminder.interval_value)
+        candidate = start + relativedelta(months=recurring_reminder.interval_value)
 
         # Ensures we generate a valid date in the future
         while (candidate < today):
-            candidate += timedelta(months=recurring_reminder.interval_value)
+            candidate += relativedelta(months=recurring_reminder.interval_value)
 
         candidate_datetime = datetime(
             candidate.year,
@@ -206,11 +207,11 @@ def calculate_next_recurring(recurring_reminder: RecurringReminder) -> datetime:
         day = recurring_reminder.day_of_month if recurring_reminder.day_of_month is not None else recurring_reminder.last_reminder_date.day
 
         start = recurring_reminder.last_reminder_date
-        candidate = start + timedelta(years=recurring_reminder.interval_value)
+        candidate = start + relativedelta(years=recurring_reminder.interval_value)
 
         # Ensures we generate a valid date in the future
         while (candidate < today):
-            candidate += timedelta(years=recurring_reminder.interval_value)
+            candidate += relativedelta(years=recurring_reminder.interval_value)
 
         candidate_datetime = datetime(
             candidate.year,
