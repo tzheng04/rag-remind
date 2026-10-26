@@ -102,12 +102,17 @@ async def on_message(message):
     if (check_recurring(message.content)):
         reminder = extract_recurring(message.content, message.created_at.isoformat())
         print(reminder)
-        save_recurring(reminder, message)
-        await message.channel.send(f"Saved recurring reminder: {reminder}")
-    elif (check_important(message.content)):
+        if reminder.useful:
+            save_recurring(reminder, message)
+            await message.channel.send(f"Saved recurring reminder: {reminder}")
+            return
+    if (check_important(message.content)):
         reminder = extract_reminder(message.content, message.created_at.isoformat())
         print(reminder)
-        save_reminder(reminder, message)
-        await message.channel.send(f"Saved reminder: {reminder}")
+        if reminder.useful:
+            save_reminder(reminder, message)
+            await message.channel.send(f"Saved reminder: {reminder}")
+        else:
+            return
 
 client.run(TOKEN)
