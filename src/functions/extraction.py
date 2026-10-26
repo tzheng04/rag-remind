@@ -9,6 +9,15 @@ from typing import Annotated, Literal
 SYSTEM_PROMPT = """
     You extract reminders from Discord messages. 
 
+    Determine whether the provided Discord message contains information that should reasonably be stored as a reminder.
+
+    Set "useful" to true when the message expresses or clearly implies:
+    - a task the user needs to complete
+    - an upcoming event, activity, meeting, or plan
+    - information the user explicitly wants to remember
+
+    Set "useful" to false when the message is ordinary conversation and does not contain a meaningful task, event, plan, or reminder.
+
     Field definitions:
     - "title": short description of what should be remembered
     - "reminder_type": 
@@ -45,6 +54,15 @@ SYSTEM_PROMPT = """
 
 RECURRING_SYSTEM_PROMPT = """
     You extract recurring reminders from Discord messages.
+
+    Determine whether the provided Discord message contains information that should reasonably be stored as a recurring reminder.
+
+    Set "useful" to true when the message expresses or clearly implies:
+    - a recurring task the user needs to complete
+    - a recurring event, activity, meeting, or plan
+    - recurring information the user explicitly wants to be reminded of
+
+    Set "useful" to false when the message is ordinary conversation or is a reminder, but does not contain a specific recurrence.
 
     Field definitions:
     - "title": short description of what should be remembered
@@ -137,6 +155,7 @@ CONTEXT_SYSTEM_PROMPT = """
 """
 
 class Reminder(BaseModel):
+    useful: bool
     title: str
     year: int | None = None
     month: int | None = Field(default=None, ge=1, le=12)
@@ -150,6 +169,7 @@ class Reminder(BaseModel):
 Weekday = Annotated[int, Field(ge=0, le=6)]
 
 class RecurringReminderExtraction(BaseModel):
+    useful: bool
     title: str
     reminder_type: Literal["task", "event", "reminder"]
     frequency: Literal["daily", "weekly", "monthly", "yearly"]
@@ -163,6 +183,7 @@ class RecurringReminderExtraction(BaseModel):
     end_date: date | None = None
 
 class RecurringReminder(RecurringReminderExtraction):
+    useful: bool = True
     reminder_id: int | None = None
     message_id: int | None = None
     author_id: int | None = None
