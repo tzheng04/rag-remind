@@ -6,6 +6,10 @@ Structured data is stored in Supabase/PostgreSQL and support retrieval through a
 ![Extract reminders from natural language using LLM](./examples/save_reminder.png)  
 ![Fetch and display upcoming reminders in the app](./examples/showreminders.png)  
 
+## Context window
+Generates context from the conversation around the original message!  
+![Context window](./examples/context_window.png)  
+
 ## Roadmap
 - Implement natural language querying for personal reminders
 - Use RAG on conversation history
